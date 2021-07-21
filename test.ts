@@ -101,7 +101,8 @@ Deno.test("AsyncIterator.toArray", async () => {
 });
 
 Deno.test("Iterator.forEach", () => {
-  createIterator([2, 2, 2]).forEach((e) => {
+  const iterator = createIterator([2, 2, 2]);
+  iterator.forEach((e) => {
     assertEquals(e, 2);
   });
 });
@@ -128,16 +129,20 @@ Deno.test("Iterator.some", () => {
 });
 
 Deno.test("AsyncIterator.some", async () => {
-  assertEquals(await createAsyncIterator([1, 2, 3]).some((e) => e === 2), true);
+  const iterator = createAsyncIterator([1, 2, 3]);
+  assertEquals(await iterator.some((e) => e === 2), true);
 });
 
 Deno.test("Iterator.every", () => {
-  assertEquals(createIterator([1, 2, 3]).every((e) => e === 2), false);
+  const iterator = createIterator([1, 2, 3]);
+  const every = iterator.every((e) => e === 2);
+  assertEquals(every, false);
 });
 
 Deno.test("AsyncIterator.every", async () => {
+  const iterator = createAsyncIterator([1, 2, 3]);
   assertEquals(
-    await createAsyncIterator([1, 2, 3]).every((e) => e === 2),
+    await iterator.every((e) => e === 2),
     false,
   );
 });
