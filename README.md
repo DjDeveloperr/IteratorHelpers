@@ -1,6 +1,7 @@
 # Iterator Helpers
 
-This implements polyfill for [iterator helpers proposal](https://github.com/tc39/proposal-iterator-helpers).
+This implements polyfill for
+[iterator helpers proposal](https://github.com/tc39/proposal-iterator-helpers).
 
 ## Usage
 
