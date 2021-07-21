@@ -53,7 +53,7 @@ export {};
 
 // #endregion
 
-// #region Utility
+// #region Prototypes and Globals
 
 /** Define a Prototype method only if it doesn't exist */
 function definePrototypeMethod(
@@ -72,10 +72,6 @@ function definePrototypeMethod(
   }
 }
 
-// #endregion
-
-// #region Prototypes and Globals
-
 const GeneratorPrototype = (function* () {})().constructor.prototype;
 const AsyncGeneratorPrototype = (async function* () {})().constructor.prototype;
 
@@ -83,14 +79,22 @@ const InvalidFromValue = new TypeError(
   `Expected array or iterator-like object`,
 );
 
-function Iterator() {
-  return (function* () {})();
+function asNative<T extends CallableFunction>(val: T): T {
+  Object.defineProperty(val, "toString", {
+    value: () => `function ${val.name}() { [native code] }`,
+    enumerable: false,
+  });
+  return val;
 }
+
+const Iterator = asNative(function Iterator() {
+  return (function* () {})();
+});
 
 Object.setPrototypeOf(Iterator.prototype, GeneratorPrototype);
 
 Object.defineProperty(Iterator, "from", {
-  value: function (what: unknown) {
+  value: asNative(function from(what: unknown) {
     if (typeof what === "object" && what !== null) {
       if (Array.isArray(what)) {
         return (function* () {
@@ -107,7 +111,7 @@ Object.defineProperty(Iterator, "from", {
         })();
       } else throw InvalidFromValue;
     } else throw InvalidFromValue;
-  },
+  }),
   enumerable: false,
 });
 
@@ -120,14 +124,14 @@ if (
   });
 }
 
-function AsyncIterator() {
+const AsyncIterator = asNative(function AsyncIterator() {
   return (async function* () {})();
-}
+});
 
 Object.setPrototypeOf(AsyncIterator.prototype, GeneratorPrototype);
 
 Object.defineProperty(AsyncIterator, "from", {
-  value: function (what: unknown) {
+  value: asNative(function from(what: unknown) {
     if (typeof what === "object" && what !== null) {
       if (Array.isArray(what)) {
         return (async function* () {
@@ -148,7 +152,7 @@ Object.defineProperty(AsyncIterator, "from", {
         })();
       } else throw InvalidFromValue;
     } else throw InvalidFromValue;
-  },
+  }),
   enumerable: false,
 });
 
