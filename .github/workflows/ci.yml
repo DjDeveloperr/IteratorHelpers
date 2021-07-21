@@ -52,5 +52,5 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v1
 
-      - name: Formatting Check
+      - name: Run Linter
         run: deno lint
