@@ -85,6 +85,18 @@ Deno.test("AsyncIterator.prototype.drop", async () => {
   assertEquals(array, [3]);
 });
 
+Deno.test("Iterator.prototype.asIndexedPairs", () => {
+  const iterator = createIterator([1, 2, 3]).asIndexedPairs();
+  const array = iterator.toArray();
+  assertEquals(array, [[0, 1], [1, 2], [2, 3]]);
+});
+
+Deno.test("AsyncIterator.prototype.asIndexedPairs", async () => {
+  const iterator = createAsyncIterator([1, 2, 3]).asIndexedPairs();
+  const array = await iterator.toArray();
+  assertEquals(array, [[0, 1], [1, 2], [2, 3]]);
+});
+
 Deno.test("Iterator.prototype.flatMap", () => {
   const iterator = createIterator([1, 2, 3]).flatMap((e) => [e, e + 1]);
   const array = iterator.toArray();

@@ -10,6 +10,7 @@ declare global {
     filter(filterFn: (value: T) => boolean): Iterator<T>;
     take(count: number): Iterator<T>;
     drop(count: number): Iterator<T>;
+    asIndexedPairs(): Iterator<[number, T]>;
     flatMap<T2>(mapperFn: (value: T) => T2[]): Iterator<T2>;
     reduce<T2>(
       reducerFn: (previousValue: T2, currentValue: T) => T2,
@@ -33,6 +34,7 @@ declare global {
     filter(filterFn: (value: T) => boolean): AsyncIterator<T>;
     take(count: number): AsyncIterator<T>;
     drop(count: number): AsyncIterator<T>;
+    asIndexedPairs(): AsyncIterator<[number, T]>;
     flatMap<T2>(mapperFn: (value: T) => T2[]): AsyncIterator<T2>;
     reduce<T2>(
       reducerFn: (previousValue: T2, currentValue: T) => T2,
@@ -307,6 +309,36 @@ definePrototypeMethod(
         } else {
           yield value;
         }
+      }
+    }).bind(this)();
+  },
+);
+
+// #endregion
+
+// #region (Async)Iterator.asIndexedPairs
+
+definePrototypeMethod(
+  GeneratorPrototype,
+  function asIndexedPairs<T>(this: IterableIterator<T>) {
+    return (function* (this: IterableIterator<T>) {
+      let value;
+      let index = 0;
+      while ((value = this.next().value)) {
+        yield [index++, value];
+      }
+    }).bind(this)();
+  },
+);
+
+definePrototypeMethod(
+  AsyncGeneratorPrototype,
+  function asIndexedPairs<T>(this: AsyncIterableIterator<T>) {
+    return (async function* (this: AsyncIterableIterator<T>) {
+      let value;
+      let index = 0;
+      while ((value = await this.next().then((e) => e.value))) {
+        yield [index++, value];
       }
     }).bind(this)();
   },
