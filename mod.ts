@@ -66,7 +66,7 @@ function definePrototypeMethod(
     typeof (proto as Record<string, unknown>)[method] === "undefined"
   ) {
     Object.defineProperty(proto, method, {
-      value,
+      value: asNative(value),
       enumerable: false,
     });
   }
