@@ -42,7 +42,7 @@ declare global {
       initialValue?: T2,
     ): Promise<T2>;
     toArray(): Promise<T[]>;
-    forEach(callback: (value: T) => unknown): void;
+    forEach(callback: (value: T) => unknown): Promise<void>;
     some(callback: (value: T) => boolean): Promise<boolean>;
     every(callback: (value: T) => boolean): Promise<boolean>;
     static from(): AsyncIterator<unknown>;
