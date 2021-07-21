@@ -1,8 +1,5 @@
 // #region Types
 
-// Prevent TS2669 in "declare global"
-export {};
-
 declare global {
   interface IteratorLike<T> {
     next: () => IteratorResult<T>;
@@ -51,6 +48,9 @@ declare global {
   }
 }
 
+// Prevent TS2669 in "declare global"
+export {};
+
 // #endregion
 
 // #region Utility
@@ -84,7 +84,7 @@ const InvalidFromValue = new TypeError(
 );
 
 function Iterator() {
-  return function* () {};
+  return (function* () {})();
 }
 
 Object.setPrototypeOf(Iterator.prototype, GeneratorPrototype);
@@ -121,7 +121,7 @@ if (
 }
 
 function AsyncIterator() {
-  return async function* () {};
+  return (async function* () {})();
 }
 
 Object.setPrototypeOf(AsyncIterator.prototype, GeneratorPrototype);
