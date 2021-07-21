@@ -38,3 +38,19 @@ jobs:
 
       - name: Formatting Check
         run: deno fmt --check
+
+  lint:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        deno: [1.x]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+
+      - name: Formatting Check
+        run: deno lint

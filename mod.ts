@@ -57,11 +57,14 @@ declare global {
 
 /** Define a Prototype method only if it doesn't exist */
 function definePrototypeMethod(
-  proto: any,
+  proto: unknown,
   value: CallableFunction,
 ) {
   const method = value.name;
-  if (typeof proto[method] === "undefined") {
+  if (
+    typeof proto === "object" && proto !== null &&
+    typeof (proto as Record<string, unknown>)[method] === "undefined"
+  ) {
     Object.defineProperty(proto, method, {
       value,
       enumerable: false,
@@ -80,69 +83,79 @@ const InvalidFromValue = new TypeError(
   `Expected array or iterator-like object`,
 );
 
-if (typeof (globalThis as any).Iterator === "undefined") {
-  function Iterator() {
-    return function* () {};
-  }
+function Iterator() {
+  return function* () {};
+}
 
-  Object.setPrototypeOf(Iterator.prototype, GeneratorPrototype);
+Object.setPrototypeOf(Iterator.prototype, GeneratorPrototype);
 
-  Object.defineProperty(Iterator, "from", {
-    value: function (what: unknown) {
-      if (typeof what === "object" && what !== null) {
-        if (Array.isArray(what)) {
-          return (function* () {
-            for (const value of what) {
-              yield value;
-            }
-          })();
-        } else if (typeof (what as any).next === "function") {
-          return (function* () {
-            let value;
-            while ((value = (what as any).next().value)) {
-              yield value;
-            }
-          })();
-        } else throw InvalidFromValue;
+Object.defineProperty(Iterator, "from", {
+  value: function (what: unknown) {
+    if (typeof what === "object" && what !== null) {
+      if (Array.isArray(what)) {
+        return (function* () {
+          for (const value of what) {
+            yield value;
+          }
+        })();
+      } else if (typeof (what as IteratorLike<unknown>).next === "function") {
+        return (function* () {
+          let value;
+          while ((value = (what as IteratorLike<unknown>).next().value)) {
+            yield value;
+          }
+        })();
       } else throw InvalidFromValue;
-    },
-    enumerable: false,
-  });
+    } else throw InvalidFromValue;
+  },
+  enumerable: false,
+});
 
+if (
+  typeof (globalThis as unknown as { Iterator: unknown }).Iterator ===
+    "undefined"
+) {
   Object.defineProperty(globalThis, "Iterator", {
     value: Iterator,
   });
 }
 
-if (typeof (globalThis as any).AsyncIterator === "undefined") {
-  function AsyncIterator() {
-    return async function* () {};
-  }
+function AsyncIterator() {
+  return async function* () {};
+}
 
-  Object.setPrototypeOf(AsyncIterator.prototype, GeneratorPrototype);
+Object.setPrototypeOf(AsyncIterator.prototype, GeneratorPrototype);
 
-  Object.defineProperty(AsyncIterator, "from", {
-    value: function (what: unknown) {
-      if (typeof what === "object" && what !== null) {
-        if (Array.isArray(what)) {
-          return (async function* () {
-            for (const item of what) {
-              yield item;
-            }
-          })();
-        } else if (typeof (what as any).next === "function") {
-          return (async function* () {
-            let value;
-            while ((value = (await (what as any).next()).value)) {
-              yield value;
-            }
-          })();
-        } else throw InvalidFromValue;
+Object.defineProperty(AsyncIterator, "from", {
+  value: function (what: unknown) {
+    if (typeof what === "object" && what !== null) {
+      if (Array.isArray(what)) {
+        return (async function* () {
+          for (const item of what) {
+            yield item;
+          }
+        })();
+      } else if (
+        typeof (what as AsyncIteratorLike<unknown>).next === "function"
+      ) {
+        return (async function* () {
+          let value;
+          while (
+            (value = (await (what as AsyncIteratorLike<unknown>).next()).value)
+          ) {
+            yield value;
+          }
+        })();
       } else throw InvalidFromValue;
-    },
-    enumerable: false,
-  });
+    } else throw InvalidFromValue;
+  },
+  enumerable: false,
+});
 
+if (
+  typeof (globalThis as unknown as { AsyncIterator: CallableFunction })
+    .AsyncIterator === "undefined"
+) {
   Object.defineProperty(globalThis, "AsyncIterator", {
     value: AsyncIterator,
   });
@@ -154,8 +167,8 @@ if (typeof (globalThis as any).AsyncIterator === "undefined") {
 
 definePrototypeMethod(
   GeneratorPrototype,
-  function map(this: IterableIterator<any>, mapperFn: (value: any) => any) {
-    return (function* (this: IterableIterator<any>) {
+  function map<T>(this: IterableIterator<T>, mapperFn: <T2>(value: T) => T2) {
+    return (function* (this: IterableIterator<T>) {
       let value;
       while ((value = this.next().value)) {
         yield mapperFn(value);
@@ -166,11 +179,11 @@ definePrototypeMethod(
 
 definePrototypeMethod(
   AsyncGeneratorPrototype,
-  function map(
-    this: AsyncIterableIterator<any>,
-    mapperFn: (value: any) => any,
+  function map<T>(
+    this: AsyncIterableIterator<T>,
+    mapperFn: <T2>(value: T) => T2,
   ) {
-    return (async function* (this: AsyncIterableIterator<any>) {
+    return (async function* (this: AsyncIterableIterator<T>) {
       let value;
       while ((value = await this.next().then((e) => e.value))) {
         yield mapperFn(value);
@@ -185,8 +198,11 @@ definePrototypeMethod(
 
 definePrototypeMethod(
   GeneratorPrototype,
-  function filter(this: IterableIterator<any>, filterFn: (value: any) => any) {
-    return (function* (this: IterableIterator<any>) {
+  function filter<T>(
+    this: IterableIterator<T>,
+    filterFn: (value: T) => boolean,
+  ) {
+    return (function* (this: IterableIterator<T>) {
       let value;
       while ((value = this.next().value)) {
         if (filterFn(value)) {
@@ -199,11 +215,11 @@ definePrototypeMethod(
 
 definePrototypeMethod(
   AsyncGeneratorPrototype,
-  function filter(
-    this: AsyncIterableIterator<any>,
-    filterFn: (value: any) => any,
+  function filter<T>(
+    this: AsyncIterableIterator<T>,
+    filterFn: (value: T) => boolean,
   ) {
-    return (async function* (this: AsyncIterableIterator<any>) {
+    return (async function* (this: AsyncIterableIterator<T>) {
       let value;
       while ((value = await this.next().then((e) => e.value))) {
         if (filterFn(value)) {
@@ -220,8 +236,8 @@ definePrototypeMethod(
 
 definePrototypeMethod(
   GeneratorPrototype,
-  function take(this: IterableIterator<any>, count: number) {
-    return (function* (this: IterableIterator<any>) {
+  function take<T>(this: IterableIterator<T>, count: number) {
+    return (function* (this: IterableIterator<T>) {
       let value;
       while ((value = this.next().value)) {
         if (count-- > 0) {
@@ -236,11 +252,11 @@ definePrototypeMethod(
 
 definePrototypeMethod(
   AsyncGeneratorPrototype,
-  function take(
-    this: AsyncIterableIterator<any>,
+  function take<T>(
+    this: AsyncIterableIterator<T>,
     count: number,
   ) {
-    return (async function* (this: AsyncIterableIterator<any>) {
+    return (async function* (this: AsyncIterableIterator<T>) {
       let value;
       while ((value = await this.next().then((e) => e.value))) {
         if (count-- > 0) {
@@ -259,8 +275,8 @@ definePrototypeMethod(
 
 definePrototypeMethod(
   GeneratorPrototype,
-  function drop(this: IterableIterator<any>, count: number) {
-    return (function* (this: IterableIterator<any>) {
+  function drop<T>(this: IterableIterator<T>, count: number) {
+    return (function* (this: IterableIterator<T>) {
       let value;
       while ((value = this.next().value)) {
         if (count-- > 0) {
@@ -275,11 +291,11 @@ definePrototypeMethod(
 
 definePrototypeMethod(
   AsyncGeneratorPrototype,
-  function drop(
-    this: AsyncIterableIterator<any>,
+  function drop<T>(
+    this: AsyncIterableIterator<T>,
     count: number,
   ) {
-    return (async function* (this: AsyncIterableIterator<any>) {
+    return (async function* (this: AsyncIterableIterator<T>) {
       let value;
       while ((value = await this.next().then((e) => e.value))) {
         if (count-- > 0) {
@@ -298,11 +314,11 @@ definePrototypeMethod(
 
 definePrototypeMethod(
   GeneratorPrototype,
-  function flatMap(
-    this: IterableIterator<any>,
-    mapperFn: (value: any) => IterableIterator<any>,
+  function flatMap<T>(
+    this: IterableIterator<T>,
+    mapperFn: <T2>(value: T) => T2[],
   ) {
-    return (function* (this: IterableIterator<any>) {
+    return (function* (this: IterableIterator<T>) {
       let value;
       while ((value = this.next().value)) {
         for (const item of mapperFn(value)) {
@@ -315,11 +331,11 @@ definePrototypeMethod(
 
 definePrototypeMethod(
   AsyncGeneratorPrototype,
-  function flatMap(
-    this: AsyncIterableIterator<any>,
-    mapperFn: (value: any) => AsyncIterableIterator<any>,
+  function flatMap<T>(
+    this: AsyncIterableIterator<T>,
+    mapperFn: <T2>(value: T) => T2[],
   ) {
-    return (async function* (this: AsyncIterableIterator<any>) {
+    return (async function* (this: AsyncIterableIterator<T>) {
       let value;
       while ((value = await this.next().then((e) => e.value))) {
         for await (const item of mapperFn(value)) {
@@ -336,10 +352,10 @@ definePrototypeMethod(
 
 definePrototypeMethod(
   GeneratorPrototype,
-  function reduce(
-    this: IterableIterator<any>,
-    reducerFn: (accumulator: any, value: any) => any,
-    initialValue: any,
+  function reduce<T, T2>(
+    this: IterableIterator<T>,
+    reducerFn: (accumulator: T2, value: T) => T2,
+    initialValue: T2,
   ) {
     let accumulator = initialValue;
     let value;
@@ -352,10 +368,10 @@ definePrototypeMethod(
 
 definePrototypeMethod(
   AsyncGeneratorPrototype,
-  async function reduce(
-    this: AsyncIterableIterator<any>,
-    reducerFn: (accumulator: any, value: any) => any,
-    initialValue: any,
+  async function reduce<T, T2>(
+    this: AsyncIterableIterator<T>,
+    reducerFn: (accumulator: T2, value: T) => T2,
+    initialValue: T2,
   ) {
     let accumulator = initialValue;
     let value;
@@ -372,7 +388,7 @@ definePrototypeMethod(
 
 definePrototypeMethod(
   GeneratorPrototype,
-  function toArray(this: IterableIterator<any>) {
+  function toArray<T>(this: IterableIterator<T>) {
     const result = [];
     let value;
     while ((value = this.next().value)) {
@@ -384,7 +400,7 @@ definePrototypeMethod(
 
 definePrototypeMethod(
   AsyncGeneratorPrototype,
-  async function toArray(this: AsyncIterableIterator<any>) {
+  async function toArray<T>(this: AsyncIterableIterator<T>) {
     const result = [];
     let value;
     while ((value = await this.next().then((e) => e.value))) {
@@ -430,9 +446,9 @@ definePrototypeMethod(
 
 definePrototypeMethod(
   GeneratorPrototype,
-  function some(
-    this: IterableIterator<any>,
-    predicateFn: (value: any) => boolean,
+  function some<T>(
+    this: IterableIterator<T>,
+    predicateFn: (value: T) => boolean,
   ) {
     let value;
     while ((value = this.next().value)) {
@@ -446,9 +462,9 @@ definePrototypeMethod(
 
 definePrototypeMethod(
   AsyncGeneratorPrototype,
-  async function some(
-    this: AsyncIterableIterator<any>,
-    predicateFn: (value: any) => boolean,
+  async function some<T>(
+    this: AsyncIterableIterator<T>,
+    predicateFn: (value: T) => boolean,
   ) {
     let value;
     while ((value = await this.next().then((e) => e.value))) {
@@ -466,9 +482,9 @@ definePrototypeMethod(
 
 definePrototypeMethod(
   GeneratorPrototype,
-  function every(
-    this: IterableIterator<any>,
-    predicateFn: (value: any) => boolean,
+  function every<T>(
+    this: IterableIterator<T>,
+    predicateFn: (value: T) => boolean,
   ) {
     let value;
     while ((value = this.next().value)) {
@@ -482,9 +498,9 @@ definePrototypeMethod(
 
 definePrototypeMethod(
   AsyncGeneratorPrototype,
-  async function every(
-    this: AsyncIterableIterator<any>,
-    predicateFn: (value: any) => boolean,
+  async function every<T>(
+    this: AsyncIterableIterator<T>,
+    predicateFn: (value: T) => boolean,
   ) {
     let value;
     while ((value = await this.next().then((e) => e.value))) {
